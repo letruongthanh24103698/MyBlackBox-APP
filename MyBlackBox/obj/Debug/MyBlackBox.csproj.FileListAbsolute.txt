@@ -1,0 +1,9 @@
+F:\C#\MyBlackBox\MyBlackBox\bin\Debug\MyBlackBox.exe.config
+F:\C#\MyBlackBox\MyBlackBox\bin\Debug\MyBlackBox.exe
+F:\C#\MyBlackBox\MyBlackBox\bin\Debug\MyBlackBox.pdb
+F:\C#\MyBlackBox\MyBlackBox\obj\Debug\MyBlackBox.csprojResolveAssemblyReference.cache
+F:\C#\MyBlackBox\MyBlackBox\obj\Debug\MyBlackBox.Form1.resources
+F:\C#\MyBlackBox\MyBlackBox\obj\Debug\MyBlackBox.Properties.Resources.resources
+F:\C#\MyBlackBox\MyBlackBox\obj\Debug\MyBlackBox.csproj.GenerateResource.Cache
+F:\C#\MyBlackBox\MyBlackBox\obj\Debug\MyBlackBox.exe
+F:\C#\MyBlackBox\MyBlackBox\obj\Debug\MyBlackBox.pdb
