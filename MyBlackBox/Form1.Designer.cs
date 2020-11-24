@@ -42,6 +42,7 @@
             this.tbxIP = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.btnStop = new System.Windows.Forms.Button();
             this.btnOpenPort = new System.Windows.Forms.Button();
             this.cbxBaudrate = new System.Windows.Forms.ComboBox();
             this.label6 = new System.Windows.Forms.Label();
@@ -192,6 +193,7 @@
             // 
             // groupBox4
             // 
+            this.groupBox4.Controls.Add(this.btnStop);
             this.groupBox4.Controls.Add(this.btnOpenPort);
             this.groupBox4.Controls.Add(this.cbxBaudrate);
             this.groupBox4.Controls.Add(this.label6);
@@ -208,6 +210,16 @@
             this.groupBox4.TabIndex = 1;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "VISUALIZE DATA";
+            // 
+            // btnStop
+            // 
+            this.btnStop.Location = new System.Drawing.Point(235, 391);
+            this.btnStop.Name = "btnStop";
+            this.btnStop.Size = new System.Drawing.Size(92, 23);
+            this.btnStop.TabIndex = 13;
+            this.btnStop.Text = "Stop";
+            this.btnStop.UseVisualStyleBackColor = true;
+            this.btnStop.Click += new System.EventHandler(this.btnStop_Click);
             // 
             // btnOpenPort
             // 
@@ -264,9 +276,9 @@
             // 
             // btnStart
             // 
-            this.btnStart.Location = new System.Drawing.Point(190, 391);
+            this.btnStart.Location = new System.Drawing.Point(110, 391);
             this.btnStart.Name = "btnStart";
-            this.btnStart.Size = new System.Drawing.Size(75, 23);
+            this.btnStart.Size = new System.Drawing.Size(100, 23);
             this.btnStart.TabIndex = 6;
             this.btnStart.Text = "Start";
             this.btnStart.UseVisualStyleBackColor = true;
@@ -345,6 +357,7 @@
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Button btnOpenPort;
         private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button btnStop;
     }
 }
 

@@ -11,6 +11,7 @@ using System.IO.Ports;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 
 namespace MyBlackBox
 {
@@ -30,6 +31,12 @@ namespace MyBlackBox
         private string GetFile_Suffix_S = "/GetFile";
         private string DelFile_Suffix_S = "/DelFile";
 
+        private bool IsGetFileRunning = false;
+        private bool IsStreamRunning = false;
+        private bool TerminateStream = false;
+
+        private Thread th;
+
         public Form1()
         {
             InitializeComponent();
@@ -40,12 +47,42 @@ namespace MyBlackBox
 
         }
 
+        private void Thread1Running()
+        {
+            while (true)
+            {
+                if (IsGetFileRunning)
+                {
+                    GetFileHandle();
+                    IsGetFileRunning = false;
+                }
+
+                if (IsStreamRunning)
+                {
+                    StartStream();
+                    IsStreamRunning = false;
+                }
+                Thread.Sleep(100);
+            }
+        }
+
         private void Form1_Load(object sender, EventArgs e)
         {
+            FormClosed += MyClosedHandler;
+
             string[] BaudRate = { "1200", "2400", "4800", "9600", "19200", "38400", "57600", "115200" };
             cbxBaudrate.Items.AddRange(BaudRate);
             cbxBaudrate.SelectedIndex = 3;//9600
             cbxComPort.DataSource = SerialPort.GetPortNames();
+
+            th = new Thread(Thread1Running);
+            th.Start();
+        }
+
+        protected void MyClosedHandler(object sender, EventArgs e)
+        {
+            // Handle the Event here.
+            th.Abort();
         }
 
         private void btnOpenPort_Click(object sender, EventArgs e)
@@ -58,6 +95,7 @@ namespace MyBlackBox
                 {
                     com.Port.Open();
                 } while (!com.Port.IsOpen);
+                com.Status = PortStatusEnum.OPENED;
                 btnOpenPort.Text = "Close";
             }
             else
@@ -66,6 +104,7 @@ namespace MyBlackBox
                 {
                     com.Port.Close();
                 } while (com.Port.IsOpen);
+                com.Status = PortStatusEnum.CLOSED;
                 btnOpenPort.Text = "Open";
             }
         }
@@ -172,7 +211,22 @@ namespace MyBlackBox
             }
         }
 
-        private void btnGetFile_Click(object sender, EventArgs e)
+        delegate void RenameGetFileCallback(string s);
+
+        private void RenameGetFile(string s)
+        {
+            if (btnGetFile.InvokeRequired)
+            {
+                RenameGetFileCallback cb = new RenameGetFileCallback(RenameGetFile);
+                Invoke(cb, new object[] { s });
+            }
+            else
+            {
+                btnGetFile.Text = s;
+            }
+        }
+
+        private void GetFileHandle()
         {
             string name = lblFileName.Text.Substring(1);
             int size = GetSize(name);
@@ -180,6 +234,8 @@ namespace MyBlackBox
             int size_per_part = 10000;
 
             int part = (int)(Math.Ceiling((double)size / (double)size_per_part));
+
+            string s;
 
             if (!System.IO.File.Exists(name))
             {
@@ -190,15 +246,26 @@ namespace MyBlackBox
                     string result;
                     for (int i = 0; i < part; i++)
                     {
-                        btnGetFile.Text = "GET FILE " + ((int)((double)i / (double)part * 100.0)).ToString() + "%";
+                        s = "GET FILE " + ((int)((double)i / (double)part * 100.0)).ToString() + "%";
+                        RenameGetFile(s);
                         result = GetFile(name, i, size_per_part);
                         sw.Write(result);
                     }
                 }
                 MessageBox.Show("Get File Done");
-                btnGetFile.Text = "GET FILE";
+                s = "GET FILE";
+                RenameGetFile(s);
             }
-            
+            else
+            {
+                MessageBox.Show("File already exists");
+            }
+        }
+
+        private void btnGetFile_Click(object sender, EventArgs e)
+        {
+            if (IsGetFileRunning == false)
+                IsGetFileRunning = true;
         }
 
         private void btnBrowser_Click(object sender, EventArgs e)
@@ -210,6 +277,7 @@ namespace MyBlackBox
                 CheckFileExists = true,
                 CheckPathExists = true,
 
+                InitialDirectory = Directory.GetCurrentDirectory(),
                 DefaultExt = "txt",
                 Filter = "txt files (*.txt)|*.txt",
                 FilterIndex = 2,
@@ -225,28 +293,82 @@ namespace MyBlackBox
             }
         }
 
-        private void btnStart_Click(object sender, EventArgs e)
+        delegate void RenameStartCallback(string s);
+
+
+        private void RenameStart(string s)
+        {
+            if (btnStart.InvokeRequired)
+            {
+                RenameStartCallback cb = new RenameStartCallback(RenameStart);
+                Invoke(cb, new object[] { s });
+            }
+            else
+            {
+                btnStart.Text = s;
+            }
+        }
+
+        delegate void AppendTextBoxCallback(string s);
+
+        private void AppendTextBox(string s)
+        {
+            if (tbxLog.InvokeRequired)
+            {
+                AppendTextBoxCallback cb = new AppendTextBoxCallback(AppendTextBox);
+                Invoke(cb, new object[] { s });
+            }
+            else
+            {
+                tbxLog.AppendText(s+"\n");
+                tbxLog.ScrollToCaret();
+            }
+        }
+
+        private void StartStream()
         {
             if (!com.Port.IsOpen)
             {
                 MessageBox.Show("Open Com Port First!");
                 return;
             }
-            tbxLog.Text = "";
-            string fileurl = tbxFile.Text;
             
-            using (StreamReader sr= File.OpenText(fileurl))
+            string fileurl = tbxFile.Text;
+            FileInfo fi = new FileInfo(fileurl);
+            int size;
+            size = (int)fi.Length;
+            int cursize = 0;
+
+            using (StreamReader sr = File.OpenText(fileurl))
             {
-                while (!sr.EndOfStream)
+                string s;
+                while (!sr.EndOfStream && !TerminateStream)
                 {
+                    int process = (int)((double)cursize / (double)(size) * 100.0);
+                    s = "Streaming " + process.ToString() + "%";
+                    RenameStart(s);
                     string sentence = sr.ReadLine();
+                    cursize += sentence.Length;
                     com.Port.WriteLine(sentence);
-                    tbxLog.AppendText(sentence);
-                    tbxLog.ScrollToCaret();
+                    AppendTextBox(sentence);
                     System.Threading.Thread.Sleep(20);
                 }
+                s = "Start";
+                RenameStart(s);
+                TerminateStream = false;
             }
             MessageBox.Show("Stream Done");
+        }
+
+        private void btnStart_Click(object sender, EventArgs e)
+        {
+            if (IsStreamRunning == false)
+            {
+                tbxLog.Text = "";
+                IsStreamRunning = true;
+            }
+            else
+                return;
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -267,6 +389,12 @@ namespace MyBlackBox
             {
                 MessageBox.Show("Delete Failed!");
             }
+        }
+
+        private void btnStop_Click(object sender, EventArgs e)
+        {
+            if (IsStreamRunning)
+                TerminateStream = true;
         }
     }
 
